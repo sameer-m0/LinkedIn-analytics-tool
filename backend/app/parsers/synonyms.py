@@ -9,6 +9,9 @@ from __future__ import annotations
 import re
 
 # canonical_key -> list of accepted header variants (matched case/space-insensitively)
+# PRIORITY: within each list, earlier entries win when multiple columns
+# resolve to the same canonical key in one sheet.  Always put the most
+# specific / "(total)" variant BEFORE "(organic)" so totals are preferred.
 SYNONYMS: dict[str, list[str]] = {
     # --- shared / dates ---
     "date": ["date", "day"],
@@ -16,26 +19,89 @@ SYNONYMS: dict[str, list[str]] = {
     "organic_followers": ["organic followers", "new followers (organic)", "organic"],
     "sponsored_followers": ["sponsored followers", "new followers (sponsored)", "sponsored"],
     "total_followers": ["total followers", "total new followers", "new followers", "followers"],
-    # --- visitors ---
-    "page_views": ["page views (total)", "total page views", "page views", "overview page views"],
+    # --- visitors (overview) ---
+    "page_views": [
+        "overview page views (total)",
+        "page views (total)",
+        "total page views",
+        "page views",
+        "overview page views",
+    ],
     "unique_visitors": [
+        "overview unique visitors (total)",
         "unique visitors (total)",
         "total unique visitors",
         "unique visitors",
     ],
-    "desktop_page_views": ["desktop page views", "page views (desktop)"],
-    "mobile_page_views": ["mobile page views", "page views (mobile)"],
+    "desktop_page_views": [
+        "overview page views (desktop)",
+        "desktop page views",
+        "page views (desktop)",
+    ],
+    "mobile_page_views": [
+        "overview page views (mobile)",
+        "mobile page views",
+        "page views (mobile)",
+    ],
+    "desktop_unique_visitors": [
+        "overview unique visitors (desktop)",
+        "unique visitors (desktop)",
+    ],
+    "mobile_unique_visitors": [
+        "overview unique visitors (mobile)",
+        "unique visitors (mobile)",
+    ],
+    # --- visitors (total / all-section page views) ---
+    "total_page_views": [
+        "total page views (total)",
+        "total page views (desktop)",
+        "total page views (mobile)",
+    ],
+    "total_unique_visitors": [
+        "total unique visitors (total)",
+        "total unique visitors (desktop)",
+        "total unique visitors (mobile)",
+    ],
+    # --- visitors (life tab) ---
+    "life_page_views": [
+        "life page views (total)",
+        "life page views (desktop)",
+        "life page views (mobile)",
+    ],
+    "life_unique_visitors": [
+        "life unique visitors (total)",
+        "life unique visitors (desktop)",
+        "life unique visitors (mobile)",
+    ],
+    # --- visitors (jobs tab) ---
+    "jobs_page_views": [
+        "jobs page views (total)",
+        "jobs page views (desktop)",
+        "jobs page views (mobile)",
+    ],
+    "jobs_unique_visitors": [
+        "jobs unique visitors (total)",
+        "jobs unique visitors (desktop)",
+        "jobs unique visitors (mobile)",
+    ],
     # --- content / posts ---
     "post_url": ["post url", "post link", "url", "link"],
     "post_title": ["post title", "title", "content", "post"],
     "post_type": ["post type", "content type", "type", "media type"],
     "posted_at": ["created date", "posted date", "date posted", "publish date"],
-    "impressions": ["impressions", "impressions (organic)", "impressions (total)"],
-    "clicks": ["clicks", "clicks (total)", "post clicks"],
-    "reactions": ["reactions", "likes", "reactions (total)"],
-    "comments": ["comments", "comments (total)"],
-    "shares": ["shares", "reposts"],
-    "engagement_rate": ["engagement rate", "engagement_rate", "engagement"],
+    # NOTE: "(total)" BEFORE "(organic)" so we prefer total when both exist
+    "impressions": ["impressions", "impressions (total)", "impressions (organic)"],
+    "clicks": ["clicks", "clicks (total)", "clicks (organic)", "post clicks"],
+    "reactions": ["reactions", "reactions (total)", "reactions (organic)", "likes"],
+    "comments": ["comments", "comments (total)", "comments (organic)"],
+    "shares": ["shares", "reposts", "reposts (total)", "reposts (organic)"],
+    "engagement_rate": [
+        "engagement rate",
+        "engagement_rate",
+        "engagement rate (total)",
+        "engagement rate (organic)",
+        "engagement",
+    ],
     "ctr": ["click through rate (ctr)", "click-through rate", "ctr"],
     # Note: demographic category columns (Job function, Seniority, …) are
     # intentionally NOT mapped here — they collide with metric names. The
@@ -89,4 +155,3 @@ def map_headers(headers: list[str]) -> dict[int, str]:
         mapping[best_idx] = canon
 
     return mapping
-

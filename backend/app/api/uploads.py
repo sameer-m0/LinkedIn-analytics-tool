@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Response, UploadFile
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
@@ -59,4 +59,5 @@ def delete_all_uploads(db: Annotated[Session, Depends(get_db)]):
     db.query(DemographicSnapshot).delete()
     db.query(Upload).delete()
     db.commit()
+    return Response(status_code=204)
 

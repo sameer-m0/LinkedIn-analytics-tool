@@ -58,8 +58,14 @@ export const api = {
   deleteUploads: async (): Promise<void> => {
     const res = await fetch(`${BASE}/uploads`, { method: "DELETE" });
     if (!res.ok) {
-      const detail = await res.json().catch(() => ({}));
-      throw new Error(detail.detail || `Delete failed: ${res.status}`);
+      let msg = `Delete failed: ${res.status}`;
+      try {
+        const detail = await res.json();
+        if (detail?.detail) msg = detail.detail;
+      } catch {
+        // 204 or empty body — ignore parse error
+      }
+      throw new Error(msg);
     }
   },
 };

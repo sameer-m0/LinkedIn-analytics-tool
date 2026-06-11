@@ -28,15 +28,22 @@ class FollowersParser(BaseParser):
     upload_type = UploadType.FOLLOWERS
 
     def confidence(self, workbook: Workbook) -> float:
-        score = 0.0
+        has_follower_timeseries = False
+        has_demographics = False
         for sheet in workbook.sheets:
             keys = {resolve_header(h) for h in sheet.headers}
             if {"organic_followers", "total_followers", "sponsored_followers"} & keys:
-                score = max(score, 0.9)
+                has_follower_timeseries = True
             lowered = {h.strip().lower() for h in sheet.headers}
             if lowered & set(_DEMO_DIMENSIONS):
-                score = max(score, 0.6)
-        return score
+                has_demographics = True
+
+        if has_follower_timeseries:
+            return 0.9
+        # Only claim demographic-only workbooks if they do NOT look like a
+        # visitors file (which also has Location/Industry/… tabs).  Without a
+        # follower time-series sheet the file is not ours.
+        return 0.0
 
     def parse(self, workbook: Workbook) -> ParseResult:
         result = ParseResult(upload_type=self.upload_type)

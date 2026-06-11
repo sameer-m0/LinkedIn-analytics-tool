@@ -7,12 +7,30 @@ from app.parsers.synonyms import resolve_header
 
 SOURCE = "visitors"
 
+# All visitor-related canonical metric keys we recognise.
 _METRICS = (
     "page_views",
     "unique_visitors",
     "desktop_page_views",
     "mobile_page_views",
+    "desktop_unique_visitors",
+    "mobile_unique_visitors",
+    "total_page_views",
+    "total_unique_visitors",
+    "life_page_views",
+    "life_unique_visitors",
+    "jobs_page_views",
+    "jobs_unique_visitors",
 )
+
+# Subset used for high-confidence detection — at least one of these must
+# resolve in a sheet for us to claim the workbook as visitors data.
+_DETECTION_KEYS = {
+    "page_views",
+    "unique_visitors",
+    "total_page_views",
+    "total_unique_visitors",
+}
 
 
 class VisitorsParser(BaseParser):
@@ -22,7 +40,7 @@ class VisitorsParser(BaseParser):
         score = 0.0
         for sheet in workbook.sheets:
             keys = {resolve_header(h) for h in sheet.headers}
-            if {"page_views", "unique_visitors"} & keys:
+            if _DETECTION_KEYS & keys:
                 # Distinguish from content (which also has impressions, not page views).
                 score = max(score, 0.85)
         return score
@@ -31,7 +49,7 @@ class VisitorsParser(BaseParser):
         result = ParseResult(upload_type=self.upload_type)
         for sheet in workbook.sheets:
             keys = {resolve_header(h) for h in sheet.headers}
-            if "date" not in keys or not ({"page_views", "unique_visitors"} & keys):
+            if "date" not in keys or not (_DETECTION_KEYS & keys):
                 continue
             date_samples = [str(r.get("date")) for r in sheet.rows[:20] if r.get("date")]
             dayfirst = detect_dayfirst(date_samples)

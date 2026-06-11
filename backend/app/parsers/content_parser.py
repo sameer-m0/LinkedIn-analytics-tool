@@ -75,9 +75,18 @@ class ContentParser(BaseParser):
                             )
                         )
                 else:
-                    # Also emit daily impression/engagement metrics for the content time series.
+                    # Emit daily metrics for the content time series from the
+                    # daily "Metrics" sheet.
                     if posted:
                         result.metrics.append(MetricRecord(posted, SOURCE, "impressions", impressions))
+                        if clicks:
+                            result.metrics.append(MetricRecord(posted, SOURCE, "clicks", clicks))
+                        if reactions:
+                            result.metrics.append(MetricRecord(posted, SOURCE, "reactions", reactions))
+                        if comments:
+                            result.metrics.append(MetricRecord(posted, SOURCE, "comments", comments))
+                        if reposts:
+                            result.metrics.append(MetricRecord(posted, SOURCE, "shares", reposts))
                         if er is not None:
                             result.metrics.append(
                                 MetricRecord(posted, SOURCE, "engagement_rate", er)
