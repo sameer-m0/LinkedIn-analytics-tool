@@ -20,6 +20,18 @@ class PostRepository:
             return 0
         for r in rows:
             r["upload_id"] = upload_id
+        if self.db.bind.dialect.name == "sqlite":
+            for r in rows:
+                existing = self.db.scalar(
+                    select(Post).where(Post.post_url == r["post_url"])
+                )
+                if existing:
+                    for k, v in r.items():
+                        setattr(existing, k, v)
+                else:
+                    self.db.add(Post(**r))
+            self.db.flush()
+            return len(rows)
         stmt = pg_insert(Post).values(rows)
         update_cols = {
             c: getattr(stmt.excluded, c)

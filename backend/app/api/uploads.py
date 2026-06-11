@@ -45,3 +45,18 @@ def list_uploads(db: Annotated[Session, Depends(get_db)]) -> list[UploadOut]:
     from app.repositories.upload_repository import UploadRepository
 
     return [UploadOut.model_validate(u) for u in UploadRepository(db).list()]
+
+
+@router.delete("", status_code=204)
+def delete_all_uploads(db: Annotated[Session, Depends(get_db)]):
+    from app.models.post import Post
+    from app.models.daily_metric import DailyMetric
+    from app.models.demographic import DemographicSnapshot
+    from app.models.upload import Upload
+
+    db.query(Post).delete()
+    db.query(DailyMetric).delete()
+    db.query(DemographicSnapshot).delete()
+    db.query(Upload).delete()
+    db.commit()
+

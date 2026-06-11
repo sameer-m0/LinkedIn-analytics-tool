@@ -66,7 +66,9 @@ export interface OverviewResponse {
   range_end: string;
   kpis: KPI[];
   top_post: TopPost | null;
+  top_posts: TopPost[];
 }
+
 
 export interface FollowersResponse {
   daily: Series;

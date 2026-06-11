@@ -63,10 +63,30 @@ def resolve_header(raw_header: str) -> str | None:
 
 
 def map_headers(headers: list[str]) -> dict[int, str]:
-    """Map column index -> canonical key for every recognized header."""
-    mapping: dict[int, str] = {}
+    """Map column index -> canonical key for every recognized header.
+
+    If multiple headers resolve to the same canonical key in the same sheet,
+    we resolve the collision by preferring the synonym that appears earlier
+    in the SYNONYMS definition list (higher priority).
+    """
+    candidates: dict[str, list[tuple[int, int]]] = {}
+
     for idx, h in enumerate(headers):
         canon = resolve_header(h)
         if canon is not None:
-            mapping[idx] = canon
+            normalized_h = _normalize(h)
+            priority = 999
+            for priority_idx, variant in enumerate(SYNONYMS[canon]):
+                if _normalize(variant) == normalized_h:
+                    priority = priority_idx
+                    break
+            candidates.setdefault(canon, []).append((idx, priority))
+
+    mapping: dict[int, str] = {}
+    for canon, idx_priorities in candidates.items():
+        idx_priorities.sort(key=lambda x: x[1])
+        best_idx = idx_priorities[0][0]
+        mapping[best_idx] = canon
+
     return mapping
+

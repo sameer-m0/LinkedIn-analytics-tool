@@ -1,5 +1,4 @@
 """Shared API dependencies: date-range query parsing."""
-from __future__ import annotations
 
 from datetime import date
 from typing import Annotated

@@ -117,23 +117,32 @@ class DashboardService:
             self._sparkline("visitors", "unique_visitors", rng),
         ))
 
+        top_posts = self._top_posts(rng, limit=5)
         return OverviewResponse(
-            range_start=rng.start, range_end=rng.end, kpis=kpis, top_post=self._top_post(rng)
+            range_start=rng.start,
+            range_end=rng.end,
+            kpis=kpis,
+            top_post=top_posts[0] if top_posts else None,
+            top_posts=top_posts,
         )
 
     def _sparkline(self, source: str, metric: str, rng: DateRange) -> list[float]:
         rows = self.metrics.range(source, metric, rng.start, rng.end)
         return [r.value for r in rows]
 
-    def _top_post(self, rng: DateRange) -> TopPost | None:
+    def _top_posts(self, rng: DateRange, limit: int = 5) -> list[TopPost]:
         posts = self.posts.range(rng.start, rng.end)
         if not posts:
-            return None
-        top = max(posts, key=lambda p: p.impressions)
-        return TopPost(
-            post_url=top.post_url, title=top.title, post_type=top.post_type,
-            impressions=top.impressions, engagement_rate=top.engagement_rate,
-        )
+            return []
+        sorted_posts = sorted(posts, key=lambda p: p.impressions, reverse=True)
+        return [
+            TopPost(
+                post_url=top.post_url, title=top.title, post_type=top.post_type,
+                impressions=top.impressions, engagement_rate=top.engagement_rate,
+            )
+            for top in sorted_posts[:limit]
+        ]
+
 
     # --- Followers ---
     def followers(self, rng: DateRange) -> FollowersResponse:

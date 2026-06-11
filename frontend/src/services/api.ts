@@ -55,4 +55,12 @@ export const api = {
   visitors: (q: RangeQuery) => getJSON<VisitorsResponse>(`${BASE}/dashboard/visitors?${qs(q)}`),
   content: (q: RangeQuery) => getJSON<ContentResponse>(`${BASE}/dashboard/content?${qs(q)}`),
   insights: (q: RangeQuery) => getJSON<InsightsResponse>(`${BASE}/insights?${qs(q)}`),
+  deleteUploads: async (): Promise<void> => {
+    const res = await fetch(`${BASE}/uploads`, { method: "DELETE" });
+    if (!res.ok) {
+      const detail = await res.json().catch(() => ({}));
+      throw new Error(detail.detail || `Delete failed: ${res.status}`);
+    }
+  },
 };
+

@@ -37,6 +37,8 @@ class ContentParser(BaseParser):
             dayfirst = detect_dayfirst(date_samples)
             result.detected_headers.setdefault("content", []).extend(sorted(k for k in keys if k))
 
+            is_posts_sheet = "post_url" in keys
+
             for i, row in enumerate(sheet.rows):
                 impressions = int(parse_number(row.get("impressions")) or 0)
                 url = row.get("post_url")
@@ -55,29 +57,31 @@ class ContentParser(BaseParser):
                 if ctr is None and impressions > 0:
                     ctr = clicks / impressions
 
-                if url:
-                    result.posts.append(
-                        PostRecord(
-                            post_url=str(url).strip(),
-                            posted_at=posted_dt,
-                            post_type=(str(row["post_type"]).strip() if row.get("post_type") else None),
-                            title=(str(row["post_title"]).strip() if row.get("post_title") else None),
-                            impressions=impressions,
-                            clicks=clicks,
-                            reactions=reactions,
-                            comments=comments,
-                            reposts=reposts,
-                            engagement_rate=er,
-                            ctr=ctr,
+                if is_posts_sheet:
+                    if url:
+                        result.posts.append(
+                            PostRecord(
+                                post_url=str(url).strip(),
+                                posted_at=posted_dt,
+                                post_type=(str(row["post_type"]).strip() if row.get("post_type") and str(row["post_type"]).strip().lower() != "nan" else None),
+                                title=(str(row["post_title"]).strip() if row.get("post_title") and str(row["post_title"]).strip().lower() != "nan" else None),
+                                impressions=impressions,
+                                clicks=clicks,
+                                reactions=reactions,
+                                comments=comments,
+                                reposts=reposts,
+                                engagement_rate=er,
+                                ctr=ctr,
+                            )
                         )
-                    )
-                # Also emit daily impression/engagement metrics for the content time series.
-                if posted:
-                    result.metrics.append(MetricRecord(posted, SOURCE, "impressions", impressions))
-                    if er is not None:
-                        result.metrics.append(
-                            MetricRecord(posted, SOURCE, "engagement_rate", er)
-                        )
+                else:
+                    # Also emit daily impression/engagement metrics for the content time series.
+                    if posted:
+                        result.metrics.append(MetricRecord(posted, SOURCE, "impressions", impressions))
+                        if er is not None:
+                            result.metrics.append(
+                                MetricRecord(posted, SOURCE, "engagement_rate", er)
+                            )
         # Collapse duplicate (date, metric) by summing impressions / averaging rates.
         result.metrics = _aggregate_daily(result.metrics)
         return result

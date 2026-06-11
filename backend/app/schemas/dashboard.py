@@ -38,6 +38,8 @@ class OverviewResponse(BaseModel):
     range_end: date
     kpis: list[KPI]
     top_post: TopPost | None = None
+    top_posts: list[TopPost] = []
+
 
 
 class CategoryValue(BaseModel):

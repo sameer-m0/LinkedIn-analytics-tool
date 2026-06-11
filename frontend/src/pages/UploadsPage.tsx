@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "../components/Card";
 import { UploadDropzone } from "../components/UploadDropzone";
 import { useFetch } from "../hooks/useFetch";
@@ -16,10 +16,71 @@ const STATUS_STYLES: Record<string, string> = {
 export function UploadsPage() {
   const { data, loading, reload } = useFetch(() => api.listUploads(), []);
   const [lastResult, setLastResult] = useState<UploadResult | null>(null);
+  const [clearing, setClearing] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+  const [confirmTimeoutId, setConfirmTimeoutId] = useState<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (confirmTimeoutId) {
+        clearTimeout(confirmTimeoutId);
+      }
+    };
+  }, [confirmTimeoutId]);
+
+  const handleClearAll = async () => {
+    console.log("handleClearAll triggered, confirming:", confirming);
+    if (!confirming) {
+      setConfirming(true);
+      const id = window.setTimeout(() => {
+        setConfirming(false);
+      }, 4000);
+      setConfirmTimeoutId(id);
+      return;
+    }
+
+    if (confirmTimeoutId) {
+      clearTimeout(confirmTimeoutId);
+      setConfirmTimeoutId(null);
+    }
+    setConfirming(false);
+    setClearing(true);
+    try {
+      console.log("Calling api.deleteUploads...");
+      await api.deleteUploads();
+      console.log("api.deleteUploads successful");
+      setLastResult(null);
+      reload();
+    } catch (err: any) {
+      console.error("api.deleteUploads failed", err);
+      alert(err.message || "Failed to clear data.");
+    } finally {
+      setClearing(false);
+    }
+  };
+
 
   return (
     <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-bold text-slate-800">Upload History & Management</h2>
+        <button
+          onClick={handleClearAll}
+          disabled={clearing}
+          className={`rounded-lg px-4 py-2 text-sm font-semibold text-white transition-all duration-200 ${
+            clearing
+              ? "bg-slate-400 cursor-not-allowed"
+              : confirming
+              ? "bg-amber-600 hover:bg-amber-700 animate-pulse scale-105"
+              : "bg-rose-600 hover:bg-rose-700"
+          } disabled:opacity-50`}
+        >
+          {clearing ? "Clearing..." : confirming ? "Click again to confirm" : "Clear All Data"}
+        </button>
+      </div>
+
       <Card title="Upload exports">
+
         <UploadDropzone
           onUploaded={(r) => {
             setLastResult(r);

@@ -25,6 +25,24 @@ class MetricRepository:
             return 0
         for r in rows:
             r["upload_id"] = upload_id
+        if self.db.bind.dialect.name == "sqlite":
+            for r in rows:
+                existing = self.db.scalar(
+                    select(DailyMetric).where(
+                        and_(
+                            DailyMetric.metric_date == r["metric_date"],
+                            DailyMetric.metric == r["metric"],
+                            DailyMetric.source == r["source"]
+                        )
+                    )
+                )
+                if existing:
+                    existing.value = r["value"]
+                    existing.upload_id = upload_id
+                else:
+                    self.db.add(DailyMetric(**r))
+            self.db.flush()
+            return len(rows)
         stmt = pg_insert(DailyMetric).values(rows)
         stmt = stmt.on_conflict_do_update(
             constraint="uq_daily_metric",

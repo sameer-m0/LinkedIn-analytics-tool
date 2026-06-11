@@ -221,6 +221,97 @@ class HighImpressionsLowCtrRule(Rule):
         )
 
 
+class PostLengthEngagementRule(Rule):
+    rule_id = "rule_7_post_length"
+    title = "Concise posts drive higher engagement"
+
+    def evaluate(self, ctx: InsightContext) -> Insight | None:
+        max_chars = self.config["max_chars"]
+        min_ratio = self.config["min_ratio"]
+        min_n = int(self.config["min_n"])
+
+        concise_ers = []
+        long_ers = []
+        for p in ctx.posts:
+            if p.engagement_rate is not None and p.title:
+                char_len = len(p.title)
+                if char_len < max_chars:
+                    concise_ers.append(p.engagement_rate)
+                else:
+                    long_ers.append(p.engagement_rate)
+
+        concise_n = len(concise_ers)
+        long_n = len(long_ers)
+
+        if concise_n < min_n or long_n < min_n:
+            return None
+
+        concise_avg = _avg(concise_ers)
+        long_avg = _avg(long_ers)
+
+        if long_avg <= 0 or concise_avg < long_avg * min_ratio:
+            return None
+
+        ratio = concise_avg / long_avg
+        return Insight(
+            rule_id=self.rule_id,
+            title=self.title,
+            evidence=(
+                f"Concise posts (under {max_chars:,.0f} chars, n={concise_n}) average {concise_avg*100:.1f}% engagement vs "
+                f"{long_avg*100:.1f}% for longer posts (n={long_n}) — {ratio:.1f}x higher."
+            ),
+            impact_score=self._clamp((ratio - 1) * 30),
+            confidence_score=min(1.0, (concise_n + long_n) / (min_n * 4)),
+            recommendation=f"Keep your posts concise (under {max_chars:,.0f} characters) to optimize for reader engagement and higher engagement rates.",
+            supporting_metrics={"concise_avg_er": concise_avg, "long_avg_er": long_avg, "concise_n": concise_n, "long_n": long_n},
+        )
+
+
+class PostLinksEngagementRule(Rule):
+    rule_id = "rule_8_post_links"
+    title = "Posts without links generate higher engagement"
+
+    def evaluate(self, ctx: InsightContext) -> Insight | None:
+        min_ratio = self.config["min_ratio"]
+        min_n = int(self.config["min_n"])
+
+        no_links_ers = []
+        with_links_ers = []
+        for p in ctx.posts:
+            if p.engagement_rate is not None and p.title:
+                has_link = "http" in p.title or "lnkd.in" in p.title
+                if has_link:
+                    with_links_ers.append(p.engagement_rate)
+                else:
+                    no_links_ers.append(p.engagement_rate)
+
+        no_links_n = len(no_links_ers)
+        with_links_n = len(with_links_ers)
+
+        if no_links_n < min_n or with_links_n < min_n:
+            return None
+
+        no_links_avg = _avg(no_links_ers)
+        with_links_avg = _avg(with_links_ers)
+
+        if with_links_avg <= 0 or no_links_avg < with_links_avg * min_ratio:
+            return None
+
+        ratio = no_links_avg / with_links_avg
+        return Insight(
+            rule_id=self.rule_id,
+            title=self.title,
+            evidence=(
+                f"Posts without links (n={no_links_n}) average {no_links_avg*100:.1f}% engagement vs "
+                f"{with_links_avg*100:.1f}% for posts with links (n={with_links_n}) — {ratio:.1f}x higher."
+            ),
+            impact_score=self._clamp((ratio - 1) * 30),
+            confidence_score=min(1.0, (no_links_n + with_links_n) / (min_n * 4)),
+            recommendation="Avoid placing links in the post copy. Share links in the comments or bio to prevent the LinkedIn algorithm and user behavior from lowering engagement.",
+            supporting_metrics={"no_links_avg_er": no_links_avg, "with_links_avg_er": with_links_avg, "no_links_n": no_links_n, "with_links_n": with_links_n},
+        )
+
+
 ALL_RULES: list[type[Rule]] = [
     PostTypeEngagementRule,
     DayOfWeekImpressionsRule,
@@ -228,4 +319,7 @@ ALL_RULES: list[type[Rule]] = [
     ConversionRule,
     DemographicGrowthRule,
     HighImpressionsLowCtrRule,
+    PostLengthEngagementRule,
+    PostLinksEngagementRule,
 ]
+

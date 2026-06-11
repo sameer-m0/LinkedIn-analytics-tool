@@ -51,3 +51,32 @@ def test_no_evidence_no_recommendation():
     # Empty context -> zero insights (the core "no evidence" guarantee).
     ctx = InsightContext(date(2024, 3, 1), date(2024, 3, 31), [], [], [])
     assert InsightsEngine().run(ctx) == []
+
+
+def test_rule7_post_length_fires():
+    posts = [_post(f"c{i}", "text", 1000, 0.10, datetime(2024, 3, 1)) for i in range(3)]
+    for p in posts:
+        p.title = "Short title"
+    long_posts = [_post(f"l{i}", "text", 1000, 0.02, datetime(2024, 3, 2)) for i in range(3)]
+    for p in long_posts:
+        p.title = "Very long title " * 100
+    posts.extend(long_posts)
+
+    ctx = InsightContext(date(2024, 3, 1), date(2024, 3, 31), posts, [], [])
+    insights = InsightsEngine().run(ctx)
+    assert any(i.rule_id == "rule_7_post_length" for i in insights)
+
+
+def test_rule8_post_links_fires():
+    posts = [_post(f"nl{i}", "text", 1000, 0.10, datetime(2024, 3, 1)) for i in range(3)]
+    for p in posts:
+        p.title = "Nice title without link"
+    link_posts = [_post(f"wl{i}", "text", 1000, 0.02, datetime(2024, 3, 2)) for i in range(3)]
+    for p in link_posts:
+        p.title = "Title with link https://lnkd.in/test"
+    posts.extend(link_posts)
+
+    ctx = InsightContext(date(2024, 3, 1), date(2024, 3, 31), posts, [], [])
+    insights = InsightsEngine().run(ctx)
+    assert any(i.rule_id == "rule_8_post_links" for i in insights)
+
