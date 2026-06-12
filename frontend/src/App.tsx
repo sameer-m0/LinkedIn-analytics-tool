@@ -1,6 +1,7 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Layout } from "./components/Layout";
 import { RangeProvider } from "./hooks/useRange";
+import { BirdsEyePage } from "./pages/BirdsEyePage";
 import { ContentPage } from "./pages/ContentPage";
 import { FollowersPage } from "./pages/FollowersPage";
 import { InsightsPage } from "./pages/InsightsPage";
@@ -18,6 +19,7 @@ export default function App() {
             <Route path="followers" element={<FollowersPage />} />
             <Route path="visitors" element={<VisitorsPage />} />
             <Route path="content" element={<ContentPage />} />
+            <Route path="birdseye" element={<BirdsEyePage />} />
             <Route path="insights" element={<InsightsPage />} />
             <Route path="uploads" element={<UploadsPage />} />
           </Route>

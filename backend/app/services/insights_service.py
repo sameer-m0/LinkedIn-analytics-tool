@@ -6,11 +6,12 @@ from sqlalchemy.orm import Session
 from app.core.dates import ComparisonMode, DateRange, comparison_range
 from app.insights.base import InsightContext
 from app.insights.engine import InsightsEngine
+from app.insights.playbook import build_playbook
 from app.models.demographic import DemographicDimension
 from app.repositories.demographic_repository import DemographicRepository
 from app.repositories.metric_repository import MetricRepository
 from app.repositories.post_repository import PostRepository
-from app.schemas.insight import Insight
+from app.schemas.insight import Insight, PlaybookItem
 
 
 class InsightsService:
@@ -21,12 +22,18 @@ class InsightsService:
         self.engine = InsightsEngine()
 
     def generate(self, rng: DateRange, mode: ComparisonMode = ComparisonMode.PREVIOUS_PERIOD) -> list[Insight]:
+        return self.engine.run(self._context(rng, mode))
+
+    def playbook(self, rng: DateRange) -> list[PlaybookItem]:
+        return build_playbook(self.posts.range(rng.start, rng.end))
+
+    def _context(self, rng: DateRange, mode: ComparisonMode) -> InsightContext:
         prev = comparison_range(rng, mode)
         demos = []
         for dim in DemographicDimension:
             demos.extend(self.demographics.by_dimension(dim))
 
-        ctx = InsightContext(
+        return InsightContext(
             range_start=rng.start,
             range_end=rng.end,
             posts=self.posts.range(rng.start, rng.end),
@@ -35,4 +42,3 @@ class InsightsService:
             prev_posts=self.posts.range(prev.start, prev.end) if prev else [],
             prev_metrics=self.metrics.range(None, None, prev.start, prev.end) if prev else [],
         )
-        return self.engine.run(ctx)

@@ -18,9 +18,10 @@ def get_insights(
     params: Annotated[RangeParams, Depends()],
     db: Annotated[Session, Depends(get_db)],
 ) -> InsightsResponse:
-    insights = InsightsService(db).generate(params.range, params.compare)
+    service = InsightsService(db)
     return InsightsResponse(
         range_start=params.range.start.isoformat(),
         range_end=params.range.end.isoformat(),
-        insights=insights,
+        playbook=service.playbook(params.range),
+        insights=service.generate(params.range, params.compare),
     )

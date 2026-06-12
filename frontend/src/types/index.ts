@@ -118,8 +118,56 @@ export interface Insight {
   supporting_metrics: Record<string, number>;
 }
 
+export interface PlaybookItem {
+  key: string;
+  title: string;
+  headline: string;
+  detail: string;
+  evidence: string;
+  items: string[];
+}
+
 export interface InsightsResponse {
   range_start: string;
   range_end: string;
+  playbook: PlaybookItem[];
   insights: Insight[];
+}
+
+// --- Birds Eye View ---
+export interface HashtagStat {
+  tag: string;
+  uses: number;
+  avg_impressions: number;
+}
+
+export interface AnalyzedPost {
+  post_url: string;
+  hook: string;
+  post_type: string | null;
+  posted_at: string | null;
+  impressions: number;
+  engagement_rate: number | null;
+  reach_multiple: number | null;
+  hashtags: string[];
+  factors: string[];
+}
+
+export interface MonthAnalysis {
+  month: string;
+  label: string;
+  posts: number;
+  total_impressions: number;
+  avg_impressions: number;
+  median_impressions: number;
+  prev_month_impressions: number | null;
+  impressions_change_pct: number | null;
+  trend_narrative: string;
+  top_posts: AnalyzedPost[];
+  low_posts: AnalyzedPost[];
+  trending_hashtags: HashtagStat[];
+}
+
+export interface BirdsEyeResponse {
+  months: MonthAnalysis[];
 }

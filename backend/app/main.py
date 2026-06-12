@@ -4,7 +4,7 @@ from __future__ import annotations
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import dashboard, insights, uploads
+from app.api import birdseye, dashboard, insights, uploads
 from app.core.config import get_settings
 from app.core.logging import configure_logging
 
@@ -25,6 +25,7 @@ api_prefix = settings.api_v1_prefix
 app.include_router(uploads.router, prefix=api_prefix)
 app.include_router(dashboard.router, prefix=api_prefix)
 app.include_router(insights.router, prefix=api_prefix)
+app.include_router(birdseye.router, prefix=api_prefix)
 
 
 @app.get("/health", tags=["health"])
