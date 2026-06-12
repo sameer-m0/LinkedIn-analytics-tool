@@ -7,43 +7,30 @@ from app.parsers.synonyms import resolve_header
 
 SOURCE = "visitors"
 
-# All visitor-related canonical metric keys we recognise.
+# Canonical visitor metric keys the dashboard reads.
 _METRICS = (
     "page_views",
     "unique_visitors",
     "desktop_page_views",
     "mobile_page_views",
-    "desktop_unique_visitors",
-    "mobile_unique_visitors",
-    "total_page_views",
-    "total_unique_visitors",
-    "life_page_views",
-    "life_unique_visitors",
-    "jobs_page_views",
-    "jobs_unique_visitors",
 )
 
-# Subset used for high-confidence detection — at least one of these must
-# resolve in a sheet for us to claim the workbook as visitors data.
-_DETECTION_KEYS = {
-    "page_views",
-    "unique_visitors",
-    "total_page_views",
-    "total_unique_visitors",
-}
+# At least one of these must resolve in a sheet for us to claim the workbook.
+_DETECTION_KEYS = {"page_views", "unique_visitors"}
 
 
 class VisitorsParser(BaseParser):
     upload_type = UploadType.VISITORS
 
     def confidence(self, workbook: Workbook) -> float:
-        score = 0.0
+        # A visitors export has page-view / unique-visitor columns and never a
+        # follower time series, so this cleanly distinguishes it from followers
+        # (both files carry the same demographic tabs).
         for sheet in workbook.sheets:
             keys = {resolve_header(h) for h in sheet.headers}
             if _DETECTION_KEYS & keys:
-                # Distinguish from content (which also has impressions, not page views).
-                score = max(score, 0.85)
-        return score
+                return 0.9
+        return 0.0
 
     def parse(self, workbook: Workbook) -> ParseResult:
         result = ParseResult(upload_type=self.upload_type)

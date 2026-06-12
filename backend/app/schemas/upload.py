@@ -12,6 +12,7 @@ class ValidationReport(BaseModel):
     confidence: float
     detected_format: str
     detected_headers: dict[str, list[str]] = {}
+    sheet_headers: dict[str, list[str]] = {}
     warnings: list[str] = []
     rows_ingested: int = 0
     metrics: int = 0

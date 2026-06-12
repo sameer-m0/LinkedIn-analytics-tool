@@ -47,6 +47,11 @@ class FollowersParser(BaseParser):
 
     def parse(self, workbook: Workbook) -> ParseResult:
         result = ParseResult(upload_type=self.upload_type)
+        # Two passes: parse the follower time-series first so we know the
+        # "as of" date, then attach demographics to that snapshot date. This
+        # keeps the snapshot deterministic (tied to the data, never the wall
+        # clock) so re-uploads dedupe and demographic growth isn't faked.
+        demo_sheets = []
         for sheet in workbook.sheets:
             keys = {resolve_header(h) for h in sheet.headers}
             if "date" in keys and (
@@ -54,7 +59,11 @@ class FollowersParser(BaseParser):
             ):
                 self._parse_timeseries(sheet, result)
             else:
-                self._parse_demographics(sheet, result)
+                demo_sheets.append(sheet)
+
+        snapshot = max((m.metric_date for m in result.metrics), default=None)
+        for sheet in demo_sheets:
+            self._parse_demographics(sheet, result, snapshot)
         return result
 
     def _parse_timeseries(self, sheet, result: ParseResult) -> None:
@@ -74,7 +83,7 @@ class FollowersParser(BaseParser):
                 if val is not None:
                     result.metrics.append(MetricRecord(d, SOURCE, mk, val))
 
-    def _parse_demographics(self, sheet, result: ParseResult) -> None:
+    def _parse_demographics(self, sheet, result: ParseResult, snapshot) -> None:
         # Find the category column (one of the dimension headers) and the count column.
         dim = None
         cat_key = None
@@ -85,12 +94,11 @@ class FollowersParser(BaseParser):
                 break
         if dim is None:
             return
-        # Use the most recent metric date as the snapshot date; fall back to today-less data.
-        from datetime import date as _date
-
-        snapshot = max(
-            (m.metric_date for m in result.metrics), default=_date.today()
-        )
+        # ``snapshot`` is the latest follower-metric date (deterministic). If the
+        # workbook had no time-series at all, skip demographics rather than
+        # inventing a wall-clock date that would corrupt growth comparisons.
+        if snapshot is None:
+            return
         result.detected_headers.setdefault("demographics", []).append(dim.value)
         for row in sheet.rows:
             category = row.get(cat_key) or row.get("demographic_category")

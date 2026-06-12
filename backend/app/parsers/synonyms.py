@@ -19,90 +19,61 @@ SYNONYMS: dict[str, list[str]] = {
     "organic_followers": ["organic followers", "new followers (organic)", "organic"],
     "sponsored_followers": ["sponsored followers", "new followers (sponsored)", "sponsored"],
     "total_followers": ["total followers", "total new followers", "new followers", "followers"],
-    # --- visitors (overview) ---
+    # --- visitors ---
+    # The LinkedIn Visitors export has many section columns (Overview / Life /
+    # Jobs / People / Products), each split Desktop/Mobile/Total, plus an
+    # all-section "Total page views (Total)" / "Total unique visitors (Total)".
+    # We collapse the meaningful top-line + device split into the four canonical
+    # keys the dashboard reads. Priority order: all-section total first, then
+    # overview, then bare. Section-specific tabs are intentionally ignored.
     "page_views": [
-        "overview page views (total)",
+        "total page views (total)",
         "page views (total)",
+        "overview page views (total)",
         "total page views",
         "page views",
         "overview page views",
     ],
     "unique_visitors": [
-        "overview unique visitors (total)",
+        "total unique visitors (total)",
         "unique visitors (total)",
+        "overview unique visitors (total)",
         "total unique visitors",
         "unique visitors",
     ],
     "desktop_page_views": [
+        "total page views (desktop)",
         "overview page views (desktop)",
         "desktop page views",
         "page views (desktop)",
     ],
     "mobile_page_views": [
+        "total page views (mobile)",
         "overview page views (mobile)",
         "mobile page views",
         "page views (mobile)",
     ],
-    "desktop_unique_visitors": [
-        "overview unique visitors (desktop)",
-        "unique visitors (desktop)",
-    ],
-    "mobile_unique_visitors": [
-        "overview unique visitors (mobile)",
-        "unique visitors (mobile)",
-    ],
-    # --- visitors (total / all-section page views) ---
-    "total_page_views": [
-        "total page views (total)",
-        "total page views (desktop)",
-        "total page views (mobile)",
-    ],
-    "total_unique_visitors": [
-        "total unique visitors (total)",
-        "total unique visitors (desktop)",
-        "total unique visitors (mobile)",
-    ],
-    # --- visitors (life tab) ---
-    "life_page_views": [
-        "life page views (total)",
-        "life page views (desktop)",
-        "life page views (mobile)",
-    ],
-    "life_unique_visitors": [
-        "life unique visitors (total)",
-        "life unique visitors (desktop)",
-        "life unique visitors (mobile)",
-    ],
-    # --- visitors (jobs tab) ---
-    "jobs_page_views": [
-        "jobs page views (total)",
-        "jobs page views (desktop)",
-        "jobs page views (mobile)",
-    ],
-    "jobs_unique_visitors": [
-        "jobs unique visitors (total)",
-        "jobs unique visitors (desktop)",
-        "jobs unique visitors (mobile)",
-    ],
     # --- content / posts ---
+    # NOTE: keep these specific. Greedy variants like bare "type"/"content"/
+    # "post" previously matched the wrong columns and shifted post data.
     "post_url": ["post url", "post link", "url", "link"],
-    "post_title": ["post title", "title", "content", "post"],
-    "post_type": ["post type", "content type", "type", "media type"],
-    "posted_at": ["created date", "posted date", "date posted", "publish date"],
-    # NOTE: "(total)" BEFORE "(organic)" so we prefer total when both exist
-    "impressions": ["impressions", "impressions (total)", "impressions (organic)"],
-    "clicks": ["clicks", "clicks (total)", "clicks (organic)", "post clicks"],
-    "reactions": ["reactions", "reactions (total)", "reactions (organic)", "likes"],
-    "comments": ["comments", "comments (total)", "comments (organic)"],
-    "shares": ["shares", "reposts", "reposts (total)", "reposts (organic)"],
+    "post_title": ["post title", "share commentary", "title"],
+    "post_type": ["post type", "media type", "content type"],
+    "posted_at": ["created date", "posted date", "date posted", "publish date", "post date", "date published"],
+    # "(total)" BEFORE "(organic)"/"(sponsored)" so totals win when several exist.
+    "impressions": ["impressions (total)", "impressions", "impressions (organic)", "impressions (sponsored)"],
+    "clicks": ["clicks (total)", "clicks", "clicks (organic)", "clicks (sponsored)", "post clicks"],
+    "reactions": ["reactions (total)", "reactions", "reactions (organic)", "reactions (sponsored)", "likes"],
+    "comments": ["comments (total)", "comments", "comments (organic)", "comments (sponsored)"],
+    "shares": ["reposts (total)", "reposts", "shares", "reposts (organic)", "reposts (sponsored)"],
     "engagement_rate": [
+        "engagement rate (total)",
         "engagement rate",
         "engagement_rate",
-        "engagement rate (total)",
         "engagement rate (organic)",
-        "engagement",
+        "engagement rate (sponsored)",
     ],
-    "ctr": ["click through rate (ctr)", "click-through rate", "ctr"],
+    "ctr": ["click through rate (ctr)", "click-through rate (ctr)", "click-through rate", "ctr"],
     # Note: demographic category columns (Job function, Seniority, …) are
     # intentionally NOT mapped here — they collide with metric names. The
     # followers parser reads them directly from the raw (unmapped) columns so

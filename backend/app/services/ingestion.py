@@ -71,6 +71,7 @@ class IngestionService:
             detected_format=workbook.fmt.value,
             detected_headers=result.detected_headers,
             warnings=result.warnings,
+            sheet_headers=result.sheet_headers,
             rows_ingested=rows,
             metrics=len(result.metrics),
             posts=len(result.posts),

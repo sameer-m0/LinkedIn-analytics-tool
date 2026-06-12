@@ -80,6 +80,9 @@ class ParseResult:
     demographics: list[DemographicRecord] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
     detected_headers: dict[str, list[str]] = field(default_factory=dict)
+    # Raw header row found per sheet — surfaced in the upload report purely as a
+    # diagnostic so the real LinkedIn column names are visible without re-parsing.
+    sheet_headers: dict[str, list[str]] = field(default_factory=dict)
 
     @property
     def total_rows(self) -> int:

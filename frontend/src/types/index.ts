@@ -26,6 +26,7 @@ export interface ValidationReport {
   confidence: number;
   detected_format: string;
   detected_headers: Record<string, string[]>;
+  sheet_headers?: Record<string, string[]>;
   warnings: string[];
   rows_ingested: number;
   metrics: number;

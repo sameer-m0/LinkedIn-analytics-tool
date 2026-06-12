@@ -105,6 +105,21 @@ export function UploadsPage() {
               <Stat label="Posts" value={formatNumber(lastResult.report.posts)} />
               <Stat label="Demographics" value={formatNumber(lastResult.report.demographics)} />
               <Stat label="Warnings" value={formatNumber(lastResult.report.warnings.length)} />
+              {lastResult.report.sheet_headers && (
+                <details className="col-span-2 mt-2 sm:col-span-4">
+                  <summary className="cursor-pointer text-xs font-medium text-slate-500">
+                    Detected sheet headers (diagnostic)
+                  </summary>
+                  <div className="mt-2 space-y-2">
+                    {Object.entries(lastResult.report.sheet_headers).map(([sheet, headers]) => (
+                      <div key={sheet} className="rounded bg-slate-50 p-2">
+                        <p className="text-xs font-semibold text-slate-600">{sheet}</p>
+                        <p className="mt-0.5 break-words text-[11px] text-slate-500">{headers.join(" · ")}</p>
+                      </div>
+                    ))}
+                  </div>
+                </details>
+              )}
             </div>
           ) : lastResult.upload.error ? (
             <p className="text-sm text-rose-600">Failed: {lastResult.upload.error}</p>

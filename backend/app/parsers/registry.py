@@ -43,4 +43,6 @@ def parse(data: bytes, *, override: UploadType | None = None) -> tuple[ParseResu
                 "Could not auto-detect export type. Please choose the type manually."
             )
     result = _PARSERS[utype].parse(workbook)
+    # Attach raw headers for diagnostics (visible in the upload report).
+    result.sheet_headers = {s.name: s.headers for s in workbook.sheets}
     return result, workbook, confidence
