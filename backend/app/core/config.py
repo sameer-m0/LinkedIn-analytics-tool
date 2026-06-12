@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     allowed_extensions: tuple[str, ...] = (".xls", ".xlsx")
 
     # CORS
-    cors_origins: list[str] = ["http://localhost:5173", "http://localhost:3000"]
+    cors_origins: list[str] = ["*"]
 
 
 @lru_cache

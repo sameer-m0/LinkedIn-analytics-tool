@@ -10,9 +10,15 @@ from app.core.config import get_settings
 
 settings = get_settings()
 
+# SQLite needs ``check_same_thread=False``; PostgreSQL does not.
+_connect_args: dict = {}
+if settings.database_url.startswith("sqlite"):
+    _connect_args["check_same_thread"] = False
+
 engine = create_engine(
     settings.database_url,
     pool_pre_ping=True,
+    connect_args=_connect_args,
     future=True,
 )
 
