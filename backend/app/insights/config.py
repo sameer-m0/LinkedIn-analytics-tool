@@ -14,5 +14,8 @@ DEFAULT_CONFIG: dict[str, dict[str, float]] = {
     "rule_6_ctr": {"impression_percentile": 0.75, "low_ctr": 0.005},
     "rule_7_post_length": {"max_chars": 1200.0, "min_ratio": 1.5, "min_n": 3.0},
     "rule_8_post_links": {"min_ratio": 1.5, "min_n": 3.0},
+    "rule_9_hashtag_count": {"min_ratio": 1.2, "min_n": 4.0},
+    "rule_10_tagging": {"min_ratio": 1.2, "min_n": 3.0},
+    "rule_11_top_hashtag": {"min_ratio": 1.5, "min_uses": 3.0},
 }
 

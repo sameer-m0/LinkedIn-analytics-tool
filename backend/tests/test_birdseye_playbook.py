@@ -1,5 +1,6 @@
 from datetime import date, datetime
 
+from app.insights.content_stats import compute_content_stats
 from app.insights.playbook import build_playbook
 from app.models.post import Post
 from app.services.birdseye_service import BirdsEyeService
@@ -16,6 +17,7 @@ def _post(url, impressions, when, *, ptype=None, title="", er=0.05):
 def _analyze(posts):
     # Drive the per-month analyzer directly (no DB needed).
     svc = BirdsEyeService.__new__(BirdsEyeService)
+    stats = compute_content_stats(posts)
     by_month = {}
     for p in posts:
         by_month.setdefault(f"{p.posted_at.year}-{p.posted_at.month:02d}", []).append(p)
@@ -24,7 +26,7 @@ def _analyze(posts):
     out = []
     for i, m in enumerate(months):
         prev = totals[months[i - 1]] if i > 0 else None
-        out.append(svc._analyze_month(m, by_month[m], prev))
+        out.append(svc._analyze_month(m, by_month[m], prev, stats))
     return out
 
 

@@ -37,3 +37,18 @@ def test_hook_first_line_truncated():
     assert T.hook(text) == "First line hook here"
     long = "x" * 200
     assert T.hook(long).endswith("…")
+
+
+def test_extract_tagged_people_pipe_separated():
+    text = "Great work team.\n\nMohit Mohan | Disha Sharma | Sharad Yadav\n\n#vc #gaming"
+    assert T.extract_tagged_people(text) == ["Mohit Mohan", "Disha Sharma", "Sharad Yadav"]
+
+
+def test_extract_tagged_people_space_separated_pairs():
+    text = "Thanks all.\n\nKrish Anurag Yashmit Kedia Mohit Mohan\n#startups"
+    assert T.extract_tagged_people(text) == ["Krish Anurag", "Yashmit Kedia", "Mohit Mohan"]
+
+
+def test_extract_tagged_people_none_when_only_prose():
+    text = "We are excited to announce our new fund. Read more below. #vc"
+    assert T.extract_tagged_people(text) == []

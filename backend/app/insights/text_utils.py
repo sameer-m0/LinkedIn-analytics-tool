@@ -30,8 +30,16 @@ _HASHTAG_RE = re.compile(r"#(\w[\w’']*)", re.UNICODE)
 _MENTION_RE = re.compile(r"@(\w[\w.\-]*)", re.UNICODE)
 _WORD_RE = re.compile(r"[A-Za-z][A-Za-z’'&-]+", re.UNICODE)
 _URL_RE = re.compile(r"https?://\S+|lnkd\.in/\S+", re.IGNORECASE)
-# Recurring brand / proper-noun phrases (Title-case or CamelCase tokens).
-_PROPER_RE = re.compile(r"\b([A-Z][a-zA-Z]+(?:[A-Z][a-zA-Z]+)?)\b")
+# A capitalized name token, e.g. "Mohit", "PlaySuper", "O'Brien".
+_NAME_TOKEN_RE = re.compile(r"[A-Z][a-zA-Z'’.&]+")
+_NAME_SEP_RE = re.compile(r"[|•·/,]+")
+_SENTENCE_PUNCT_RE = re.compile(r"[.?!:;]")
+# Words that look capitalized at a line start but aren't names.
+_NON_NAME_WORDS = {
+    "the", "a", "we", "our", "us", "you", "your", "they", "i", "and", "to",
+    "follow", "thanks", "thank", "featuring", "with", "read", "more", "here",
+    "shoutout", "ps", "join", "meet", "from", "by", "via", "credits", "credit",
+}
 
 
 def normalize(text: str | None) -> str:
@@ -59,26 +67,67 @@ def extract_mentions(text: str | None) -> list[str]:
     return list(seen)
 
 
-def extract_brands(text: str | None, *, ignore: set[str] | None = None) -> list[str]:
-    """Heuristic brand/entity extraction when @-mentions are absent.
+def _is_name_line(line: str) -> bool:
+    """A line that is (almost) entirely capitalized name tokens + separators.
 
-    Picks recurring Title-case / CamelCase tokens (e.g. ``PlaySuper``, ``Forbes``)
-    from the *first portion* of the post, skipping the hashtag block and common
-    sentence-start words. Best-effort — used only to suggest who to tag.
+    LinkedIn renders @-tagged people as their display names, usually grouped on
+    the last line(s) before the hashtags, e.g. "Mohit Mohan | Disha Sharma".
     """
-    ignore = ignore or set()
+    cleaned = _NAME_SEP_RE.sub(" ", line).strip()
+    if not cleaned or _SENTENCE_PUNCT_RE.search(cleaned):
+        return False
+    words = cleaned.split()
+    if len(words) < 2 or len(words) > 14:
+        return False
+    name_like = sum(1 for w in words if _NAME_TOKEN_RE.fullmatch(w) and w.lower() not in _NON_NAME_WORDS)
+    return name_like >= 2 and name_like / len(words) >= 0.8
+
+
+def _pair_names(line: str) -> list[str]:
+    """Pair consecutive capitalized tokens into "First Last" names."""
+    cleaned = _NAME_SEP_RE.sub(" ", line)
+    tokens = [
+        t for t in _NAME_TOKEN_RE.findall(cleaned)
+        if t.lower() not in _NON_NAME_WORDS and len(t) > 1
+    ]
+    names: list[str] = []
+    i = 0
+    while i < len(tokens):
+        if i + 1 < len(tokens):
+            names.append(f"{tokens[i]} {tokens[i + 1]}")
+            i += 2
+        else:
+            names.append(tokens[i])
+            i += 1
+    return names
+
+
+def extract_tagged_people(text: str | None) -> list[str]:
+    """Extract tagged people from the mention block above the hashtags.
+
+    Looks at the last few non-empty lines before the first hashtag (where
+    LinkedIn places @-tags), keeps the ones that read as name lists, and pairs
+    tokens into full names. Returns [] when no such block is present.
+    """
     norm = normalize(text)
-    # Drop URLs and hashtags so we don't pick fragments out of them.
-    norm = _URL_RE.sub(" ", _HASHTAG_RE.sub(" ", norm))
-    out: dict[str, None] = {}
-    for token in _PROPER_RE.findall(norm):
-        low = token.lower()
-        if low in _STOPWORDS or low in ignore or len(token) < 3:
-            continue
-        # CamelCase (PlaySuper) or known multi-cap are strong brand signals; a
-        # plain Title-case word is weaker but still useful when it recurs.
-        out.setdefault(token, None)
-    return list(out)
+    if not norm:
+        return []
+    lines = [ln.strip() for ln in norm.splitlines()]
+    cut = next((i for i, ln in enumerate(lines) if "#" in ln), len(lines))
+    region = [ln for ln in lines[:cut] if ln]
+
+    names: list[str] = []
+    # Scan the tail of the region; collect consecutive name lines.
+    for ln in reversed(region[-4:]):
+        if _is_name_line(ln):
+            names = _pair_names(ln) + names
+        elif names:
+            break  # passed the contiguous name block
+    # De-duplicate, preserve order.
+    seen: dict[str, None] = {}
+    for nm in names:
+        seen.setdefault(nm, None)
+    return list(seen)
 
 
 def extract_keywords(text: str | None, *, limit: int = 8) -> list[str]:
