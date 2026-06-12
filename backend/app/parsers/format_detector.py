@@ -21,7 +21,10 @@ class SpreadsheetFormat(str, Enum):
 
     @property
     def engine(self) -> str | None:
-        return {"xlsx": "openpyxl", "xls": "xlrd"}.get(self.value)
+        # Legacy .xls (BIFF/OLE2) is read with calamine — a fast, dependency-light
+        # Rust reader — instead of xlrd (which some networks block on security
+        # grounds). .xlsx stays on openpyxl.
+        return {"xlsx": "openpyxl", "xls": "calamine"}.get(self.value)
 
 
 def detect_format(data: bytes) -> SpreadsheetFormat:

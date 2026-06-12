@@ -13,10 +13,10 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
+import app.models  # noqa: F401  (must precede the alias import below)
 from app.database.base import Base
 from app.database.session import get_db
-from app.main import app
-import app.models  # noqa: F401
+from app.main import app as fastapi_app  # alias: `import app.models` rebinds `app`
 
 from tests.conftest import build_xlsx
 
@@ -46,9 +46,9 @@ def client():
         finally:
             db.close()
 
-    app.dependency_overrides[get_db] = override_db
-    yield TestClient(app)
-    app.dependency_overrides.clear()
+    fastapi_app.dependency_overrides[get_db] = override_db
+    yield TestClient(fastapi_app)
+    fastapi_app.dependency_overrides.clear()
     Base.metadata.drop_all(engine)
 
 
