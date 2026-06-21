@@ -1,9 +1,3 @@
-"""Vercel serverless function entry point.
-
-Vercel's Python runtime detects the ``app`` variable (a FastAPI/ASGI instance)
-and wraps it automatically.  On every cold-start we ensure the database tables
-exist so there is no need for a separate migration step.
-"""
 import os
 import sys
 
@@ -16,7 +10,6 @@ if _backend_dir not in sys.path:
 
 # ---------------------------------------------------------------------------
 # 2. Normalise DATABASE_URL for SQLAlchemy + psycopg3.
-#    Neon gives ``postgresql://…`` but SQLAlchemy needs the driver suffix.
 # ---------------------------------------------------------------------------
 _db_url = os.environ.get("DATABASE_URL", "")
 if _db_url.startswith("postgresql://"):
@@ -29,20 +22,32 @@ elif _db_url.startswith("postgres://"):
     )
 
 # ---------------------------------------------------------------------------
-# 3. Import the FastAPI app – Vercel picks up the ``app`` name.
+# 3. Import the FastAPI app at top-level scope for Vercel static analyzer.
 # ---------------------------------------------------------------------------
 from app.main import app  # noqa: E402
 
 # ---------------------------------------------------------------------------
-# 4. Ensure all ORM models are loaded, then create tables on cold-start.
+# 4. Use FastAPI startup event to initialize database tables.
 # ---------------------------------------------------------------------------
-from app.database.base import Base  # noqa: E402
-from app.database.session import engine  # noqa: E402
-
-# Force-import every model so Base.metadata knows about them.
-import app.models.upload  # noqa: F401, E402
-import app.models.daily_metric  # noqa: F401, E402
-import app.models.post  # noqa: F401, E402
-import app.models.demographic  # noqa: F401, E402
-
-Base.metadata.create_all(bind=engine)
+@app.on_event("startup")
+def on_startup():
+    print("Vercel startup event: Initializing database...", flush=True)
+    try:
+        from app.database.base import Base
+        from app.database.session import engine
+        
+        # Force-import every model so Base.metadata knows about them.
+        import app.models.upload  # noqa: F401
+        import app.models.daily_metric  # noqa: F401
+        import app.models.post  # noqa: F401
+        import app.models.demographic  # noqa: F401
+        
+        Base.metadata.create_all(bind=engine)
+        print("Vercel startup event: Database initialization complete.", flush=True)
+    except Exception as e:
+        import traceback
+        print("!!! ERROR DURING DATABASE INITIALIZATION !!!", file=sys.stderr, flush=True)
+        traceback.print_exc(file=sys.stderr)
+        # We don't re-raise here so the app container doesn't immediately crash.
+        # This allows endpoints (like /api/health) to load and report status,
+        # making debugging much easier.

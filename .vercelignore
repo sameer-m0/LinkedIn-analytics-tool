@@ -1,0 +1,33 @@
+# Exclusion list for Vercel deployments
+
+# Virtual environments
+.venv
+backend/.venv
+.venv/
+backend/.venv/
+
+# Local databases
+*.db
+backend/*.db
+backend/linkedin_analytics.db
+
+# Node modules and build output
+node_modules/
+frontend/node_modules/
+frontend/dist/
+dist/
+.vite/
+
+# Vercel temporary/cache files
+.vercel/
+.vercel
+
+# Cache and python temp files
+__pycache__/
+*.pyc
+.pytest_cache/
+.pytest/
+
+# Git
+.git/
+.gitignore

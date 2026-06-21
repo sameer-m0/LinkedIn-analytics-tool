@@ -21,13 +21,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-api_prefix = settings.api_v1_prefix
+import os
+is_vercel = "VERCEL" in os.environ
+api_prefix = "" if is_vercel else settings.api_v1_prefix
+
 app.include_router(uploads.router, prefix=api_prefix)
 app.include_router(dashboard.router, prefix=api_prefix)
 app.include_router(insights.router, prefix=api_prefix)
 app.include_router(birdseye.router, prefix=api_prefix)
 
 
+
 @app.get("/health", tags=["health"])
+@app.get("/api/health", tags=["health"])
 def health() -> dict[str, str]:
     return {"status": "ok"}
+

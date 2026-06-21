@@ -10,13 +10,19 @@ from app.core.config import get_settings
 
 settings = get_settings()
 
+db_url = settings.database_url
+if db_url.startswith("postgresql://"):
+    db_url = db_url.replace("postgresql://", "postgresql+psycopg://", 1)
+elif db_url.startswith("postgres://"):
+    db_url = db_url.replace("postgres://", "postgresql+psycopg://", 1)
+
 # SQLite needs ``check_same_thread=False``; PostgreSQL does not.
 _connect_args: dict = {}
-if settings.database_url.startswith("sqlite"):
+if db_url.startswith("sqlite"):
     _connect_args["check_same_thread"] = False
 
 engine = create_engine(
-    settings.database_url,
+    db_url,
     pool_pre_ping=True,
     connect_args=_connect_args,
     future=True,

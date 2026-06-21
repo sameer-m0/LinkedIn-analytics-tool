@@ -15,3 +15,5 @@ dist/
 .DS_Store
 sample_data/*.xlsx
 .vercel
+.vercel_python_packages/
+
