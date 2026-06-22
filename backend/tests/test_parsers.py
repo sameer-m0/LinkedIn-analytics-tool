@@ -41,3 +41,25 @@ def test_content_autodetect_and_derived_rates(content_xlsx):
 def test_manual_override(content_xlsx):
     result, _, _ = registry.parse(content_xlsx, override=UploadType.CONTENT)
     assert result.upload_type is UploadType.CONTENT
+
+
+def test_content_media_type_synonyms_and_heuristics():
+    from tests.conftest import build_xlsx
+    xlsx = build_xlsx([
+        ["Post URL", "Post type", "Content Type", "Created date", "Impressions", "Clicks", "Reactions", "Comments", "Shares", "Post title", "Views"],
+        ["https://linkedin.com/p/1", "organic", "document", "01/15/2024", "100", "5", "5", "2", "1", "Some post title", "0"],
+        ["https://linkedin.com/p/2", None, None, "01/16/2024", "200", "1", "1", "0", "0", "Read our latest PDF slide carousel guide.", "0"],
+        ["https://linkedin.com/p/3", None, None, "01/17/2024", "300", "2", "2", "1", "0", "Watch this cool footage.", "10"],
+    ])
+    result, wb, conf = registry.parse(xlsx)
+    assert result.upload_type is UploadType.CONTENT
+    assert len(result.posts) == 3
+    
+    p1 = next(p for p in result.posts if p.post_url == "https://linkedin.com/p/1")
+    p2 = next(p for p in result.posts if p.post_url == "https://linkedin.com/p/2")
+    p3 = next(p for p in result.posts if p.post_url == "https://linkedin.com/p/3")
+    
+    assert p1.post_type == "document"
+    assert p2.post_type == "document"
+    assert p3.post_type == "video"
+

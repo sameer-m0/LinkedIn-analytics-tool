@@ -110,11 +110,26 @@ class ContentParser(BaseParser):
             er = _clamp_rate(er)
             ctr = _clamp_rate(ctr)
 
+            ptype_raw = row.get("post_type")
+            ptype = _clean_post_type(ptype_raw)
+            if not ptype:
+                title_text = _clean_text(row.get("post_title")) or ""
+                title_lower = title_text.lower()
+                views = parse_number(row.get("views"))
+                if views is not None and int(views) > 0:
+                    ptype = "video"
+                elif any(word in title_lower for word in ["pdf", "carousel", "slide", "document", "swipe"]):
+                    ptype = "document"
+                elif "http" in title_lower or "lnkd.in" in title_lower:
+                    ptype = "link"
+                else:
+                    ptype = "text"
+
             result.posts.append(
                 PostRecord(
                     post_url=str(url).strip(),
                     posted_at=posted_dt,
-                    post_type=_clean_post_type(row.get("post_type")),
+                    post_type=ptype,
                     title=_clean_text(row.get("post_title")),
                     impressions=impressions,
                     clicks=clicks,
@@ -165,7 +180,18 @@ def _clean_post_type(value) -> str | None:
     s = _clean_text(value)
     if s is None or s.lower() in _NON_POST_TYPES:
         return None
-    return s
+    val_lower = s.lower()
+    if "video" in val_lower:
+        return "video"
+    elif "image" in val_lower or "photo" in val_lower or "picture" in val_lower:
+        return "image"
+    elif "document" in val_lower or "pdf" in val_lower or "slide" in val_lower or "carousel" in val_lower:
+        return "document"
+    elif "link" in val_lower or "article" in val_lower:
+        return "link"
+    elif "text" in val_lower or "status" in val_lower:
+        return "text"
+    return val_lower
 
 
 def _clamp_rate(value: float | None) -> float | None:

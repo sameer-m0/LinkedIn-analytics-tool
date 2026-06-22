@@ -38,3 +38,26 @@ app.include_router(copywriting.router, prefix=api_prefix)
 def health() -> dict[str, str]:
     return {"status": "ok"}
 
+
+@app.on_event("startup")
+def on_startup():
+    from app.database.session import SessionLocal
+    db = SessionLocal()
+    try:
+        from app.models.post import Post
+        posts = db.query(Post).filter(Post.post_type == None).all()
+        if posts:
+            for p in posts:
+                title_lower = (p.title or "").lower()
+                if any(word in title_lower for word in ["pdf", "carousel", "slide", "document", "swipe"]):
+                    p.post_type = "document"
+                elif "http" in title_lower or "lnkd.in" in title_lower:
+                    p.post_type = "link"
+                else:
+                    p.post_type = "text"
+            db.commit()
+    except Exception as exc:
+        print(f"Startup backfill failed: {exc}")
+    finally:
+        db.close()
+

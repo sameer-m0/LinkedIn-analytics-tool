@@ -58,7 +58,7 @@ SYNONYMS: dict[str, list[str]] = {
     # "post" previously matched the wrong columns and shifted post data.
     "post_url": ["post url", "post link", "url", "link"],
     "post_title": ["post title", "share commentary", "title"],
-    "post_type": ["post type", "media type", "content type"],
+    "post_type": ["content type", "media type", "post type"],
     "posted_at": ["created date", "posted date", "date posted", "publish date", "post date", "date published"],
     # "(total)" BEFORE "(organic)"/"(sponsored)" so totals win when several exist.
     "impressions": ["impressions (total)", "impressions", "impressions (organic)", "impressions (sponsored)"],
@@ -74,6 +74,7 @@ SYNONYMS: dict[str, list[str]] = {
         "engagement rate (sponsored)",
     ],
     "ctr": ["click through rate (ctr)", "click-through rate (ctr)", "click-through rate", "ctr"],
+    "views": ["views", "video views", "views (total)", "post views", "video views (total)"],
     # Note: demographic category columns (Job function, Seniority, …) are
     # intentionally NOT mapped here — they collide with metric names. The
     # followers parser reads them directly from the raw (unmapped) columns so
