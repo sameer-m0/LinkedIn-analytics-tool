@@ -172,3 +172,25 @@ export interface BirdsEyeResponse {
   months: PeriodAnalysis[];
   quarters: PeriodAnalysis[];
 }
+
+export interface PostCopywritingAnalysis {
+  post_id: number;
+  post_url: string;
+  posted_at: string | null;
+  post_type: string | null;
+  title: string | null;
+  impressions: number;
+  engagement_rate: number | null;
+  hook: string;
+  hook_effectiveness: "High" | "Medium" | "Low";
+  tone: string;
+  tone_explanation: string;
+  key_hooks: string[];
+  convincing_elements: string[];
+  improvement_suggestions: string[];
+}
+
+export interface CopywritingListResponse {
+  posts: PostCopywritingAnalysis[];
+  total_count: number;
+}

@@ -4,7 +4,7 @@ from __future__ import annotations
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import birdseye, dashboard, insights, uploads
+from app.api import birdseye, copywriting, dashboard, insights, uploads
 from app.core.config import get_settings
 from app.core.logging import configure_logging
 
@@ -29,6 +29,7 @@ app.include_router(uploads.router, prefix=api_prefix)
 app.include_router(dashboard.router, prefix=api_prefix)
 app.include_router(insights.router, prefix=api_prefix)
 app.include_router(birdseye.router, prefix=api_prefix)
+app.include_router(copywriting.router, prefix=api_prefix)
 
 
 

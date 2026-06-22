@@ -1,6 +1,7 @@
 import type {
   BirdsEyeResponse,
   ContentResponse,
+  CopywritingListResponse,
   FollowersResponse,
   InsightsResponse,
   OverviewResponse,
@@ -18,12 +19,36 @@ export interface RangeQuery {
   compare?: string;
 }
 
+export interface CopywritingQuery extends RangeQuery {
+  search?: string;
+  performance_tier?: string;
+  tone?: string;
+  sort_by?: string;
+  sort_order?: string;
+}
+
 function qs(q: RangeQuery): string {
   const params = new URLSearchParams();
   params.set("preset", q.preset);
   if (q.start) params.set("start", q.start);
   if (q.end) params.set("end", q.end);
   if (q.compare) params.set("compare", q.compare);
+  return params.toString();
+}
+
+function copywritingQs(q: CopywritingQuery): string {
+  const params = new URLSearchParams();
+  params.set("preset", q.preset);
+  if (q.start) params.set("start", q.start);
+  if (q.end) params.set("end", q.end);
+  if (q.compare) params.set("compare", q.compare);
+
+  if (q.search) params.set("search", q.search);
+  if (q.performance_tier) params.set("performance_tier", q.performance_tier);
+  if (q.tone) params.set("tone", q.tone);
+  if (q.sort_by) params.set("sort_by", q.sort_by);
+  if (q.sort_order) params.set("sort_order", q.sort_order);
+
   return params.toString();
 }
 
@@ -57,6 +82,7 @@ export const api = {
   content: (q: RangeQuery) => getJSON<ContentResponse>(`${BASE}/dashboard/content?${qs(q)}`),
   insights: (q: RangeQuery) => getJSON<InsightsResponse>(`${BASE}/insights?${qs(q)}`),
   birdseye: (q: RangeQuery) => getJSON<BirdsEyeResponse>(`${BASE}/birdseye?${qs(q)}`),
+  copywriting: (q: CopywritingQuery) => getJSON<CopywritingListResponse>(`${BASE}/copywriting/posts?${copywritingQs(q)}`),
   deleteUploads: async (): Promise<void> => {
     const res = await fetch(`${BASE}/uploads`, { method: "DELETE" });
     if (!res.ok) {
