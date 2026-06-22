@@ -153,14 +153,14 @@ export interface AnalyzedPost {
   factors: string[];
 }
 
-export interface MonthAnalysis {
-  month: string;
+export interface PeriodAnalysis {
+  period: string;
   label: string;
   posts: number;
   total_impressions: number;
   avg_impressions: number;
   median_impressions: number;
-  prev_month_impressions: number | null;
+  prev_period_impressions: number | null;
   impressions_change_pct: number | null;
   trend_narrative: string;
   top_posts: AnalyzedPost[];
@@ -169,5 +169,6 @@ export interface MonthAnalysis {
 }
 
 export interface BirdsEyeResponse {
-  months: MonthAnalysis[];
+  months: PeriodAnalysis[];
+  quarters: PeriodAnalysis[];
 }

@@ -23,14 +23,14 @@ class AnalyzedPost(BaseModel):
     factors: list[str] = []  # boom drivers (top) or mistakes (low)
 
 
-class MonthAnalysis(BaseModel):
-    month: str  # "2026-03"
-    label: str  # "March 2026"
+class PeriodAnalysis(BaseModel):
+    period: str  # "2026-03" or "2026-Q1"
+    label: str  # "March 2026" or "Q1 2026"
     posts: int
     total_impressions: float
     avg_impressions: float
     median_impressions: float
-    prev_month_impressions: float | None = None
+    prev_period_impressions: float | None = None
     impressions_change_pct: float | None = None
     trend_narrative: str
     top_posts: list[AnalyzedPost] = []
@@ -39,4 +39,6 @@ class MonthAnalysis(BaseModel):
 
 
 class BirdsEyeResponse(BaseModel):
-    months: list[MonthAnalysis] = []  # newest first
+    months: list[PeriodAnalysis] = []  # newest first
+    quarters: list[PeriodAnalysis] = []  # newest first
+

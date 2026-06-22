@@ -1,12 +1,13 @@
+import { useState } from "react";
 import { Card, StateWrapper } from "../components/Card";
 import { useFetch } from "../hooks/useFetch";
 import { useRange } from "../hooks/useRange";
 import { api } from "../services/api";
-import type { AnalyzedPost, MonthAnalysis } from "../types";
+import type { AnalyzedPost, PeriodAnalysis } from "../types";
 import { formatNumber, formatRate } from "../utils/format";
 
-function ChangeBadge({ pct }: { pct: number | null }) {
-  if (pct === null) return <span className="text-xs text-slate-400">first month</span>;
+function ChangeBadge({ pct, isQuarter }: { pct: number | null; isQuarter: boolean }) {
+  if (pct === null) return <span className="text-xs text-slate-400">first {isQuarter ? "quarter" : "month"}</span>;
   const up = pct >= 0;
   return (
     <span className={`text-sm font-semibold ${up ? "text-emerald-600" : "text-rose-600"}`}>
@@ -55,24 +56,26 @@ function PostBlock({ post, kind }: { post: AnalyzedPost; kind: "top" | "low" }) 
   );
 }
 
-function MonthCard({ m }: { m: MonthAnalysis }) {
+function PeriodCard({ m, isQuarter }: { m: PeriodAnalysis; isQuarter: boolean }) {
   return (
     <Card>
       <div className="mb-3 flex items-center justify-between border-b border-slate-100 pb-3">
         <div>
           <h2 className="text-lg font-semibold text-slate-800">{m.label}</h2>
           <p className="text-xs text-slate-400">
-            {m.posts} posts · {formatNumber(m.total_impressions)} impressions · avg {formatNumber(m.avg_impressions)}
+            {m.posts} post{m.posts !== 1 ? "s" : ""} · {formatNumber(m.total_impressions)} impressions · avg {formatNumber(m.avg_impressions)}
           </p>
         </div>
-        <ChangeBadge pct={m.impressions_change_pct} />
+        <ChangeBadge pct={m.impressions_change_pct} isQuarter={isQuarter} />
       </div>
 
       <p className="mb-4 rounded-lg bg-slate-50 p-3 text-sm text-slate-700">{m.trend_narrative}</p>
 
       {m.trending_hashtags.length > 0 && (
         <div className="mb-4">
-          <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">Trending hashtags this month</p>
+          <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">
+            Trending hashtags this {isQuarter ? "quarter" : "month"}
+          </p>
           <div className="flex flex-wrap gap-1.5">
             {m.trending_hashtags.map((h) => (
               <span key={h.tag} className="rounded-full bg-brand-light px-2 py-0.5 text-xs text-brand-dark">
@@ -96,7 +99,7 @@ function MonthCard({ m }: { m: MonthAnalysis }) {
             {m.low_posts.length ? (
               m.low_posts.map((p) => <PostBlock key={p.post_url} post={p} kind="low" />)
             ) : (
-              <p className="text-xs text-slate-400">Not enough posts this month to contrast.</p>
+              <p className="text-xs text-slate-400">Not enough posts this {isQuarter ? "quarter" : "month"} to contrast.</p>
             )}
           </div>
         </div>
@@ -108,16 +111,49 @@ function MonthCard({ m }: { m: MonthAnalysis }) {
 export function BirdsEyePage() {
   const { query } = useRange();
   const { data, loading, error } = useFetch(() => api.birdseye(query), [JSON.stringify(query)]);
+  const [viewMode, setViewMode] = useState<"months" | "quarters">("months");
 
   return (
-    <StateWrapper loading={loading} error={error} empty={!!data && data.months.length === 0}>
+    <StateWrapper loading={loading} error={error} empty={!!data && data[viewMode].length === 0}>
       {data && (
         <div className="space-y-6">
-          <p className="text-sm text-slate-500">
-            Month-by-month read on what drove reach — why impressions moved, which posts broke out and why, and what
-            held the quieter posts back. Use it to repeat the wins and avoid the misses.
-          </p>
-          {data.months.map((m) => <MonthCard key={m.month} m={m} />)}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-100 pb-4">
+            <p className="text-sm text-slate-500 max-w-xl">
+              {viewMode === "months"
+                ? "Month-by-month read on what drove reach — why impressions moved, which posts broke out and why, and what held the quieter posts back. Use it to repeat the wins and avoid the misses."
+                : "Quarter-by-quarter Birds Eye View of high-level trends, quarterly impressions growth, and key post performance factors."}
+            </p>
+            <div className="flex self-start sm:self-center rounded-lg bg-slate-100 p-0.5 shadow-sm">
+              <button
+                type="button"
+                onClick={() => setViewMode("months")}
+                className={`rounded-md px-3.5 py-1.5 text-xs font-medium transition-all ${
+                  viewMode === "months"
+                    ? "bg-white text-slate-900 shadow-sm"
+                    : "text-slate-500 hover:text-slate-950"
+                }`}
+              >
+                Monthly Insights
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode("quarters")}
+                className={`rounded-md px-3.5 py-1.5 text-xs font-medium transition-all ${
+                  viewMode === "quarters"
+                    ? "bg-white text-slate-900 shadow-sm"
+                    : "text-slate-500 hover:text-slate-950"
+                }`}
+              >
+                Quarterly Insights
+              </button>
+            </div>
+          </div>
+
+          <div className="space-y-6">
+            {data[viewMode].map((m) => (
+              <PeriodCard key={m.period} m={m} isQuarter={viewMode === "quarters"} />
+            ))}
+          </div>
         </div>
       )}
     </StateWrapper>

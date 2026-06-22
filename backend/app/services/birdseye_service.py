@@ -24,7 +24,7 @@ from app.schemas.birdseye import (
     AnalyzedPost,
     BirdsEyeResponse,
     HashtagStat,
-    MonthAnalysis,
+    PeriodAnalysis,
 )
 
 _MONTHS = [
@@ -46,6 +46,7 @@ class BirdsEyeService:
         # Global benchmarks shared with the Insights playbook (cohesion).
         stats = compute_content_stats(posts)
 
+        # Month-by-month
         by_month: dict[str, list[Post]] = defaultdict(list)
         for p in posts:
             by_month[f"{p.posted_at.year}-{p.posted_at.month:02d}"].append(p)
@@ -53,18 +54,33 @@ class BirdsEyeService:
         months_sorted = sorted(by_month)  # ascending, for prev-month deltas
         month_totals = {m: sum(p.impressions for p in ps) for m, ps in by_month.items()}
 
-        analyses: list[MonthAnalysis] = []
+        month_analyses: list[PeriodAnalysis] = []
         for i, m in enumerate(months_sorted):
             prev_total = month_totals[months_sorted[i - 1]] if i > 0 else None
-            analyses.append(self._analyze_month(m, by_month[m], prev_total, stats))
+            month_analyses.append(self._analyze_period(m, by_month[m], prev_total, stats, is_quarter=False))
+        month_analyses.reverse()  # newest first for display
 
-        analyses.reverse()  # newest first for display
-        return BirdsEyeResponse(months=analyses)
+        # Quarter-by-quarter
+        by_quarter: dict[str, list[Post]] = defaultdict(list)
+        for p in posts:
+            q = (p.posted_at.month - 1) // 3 + 1
+            by_quarter[f"{p.posted_at.year}-Q{q}"].append(p)
 
-    # --- per month ---
-    def _analyze_month(
-        self, month: str, posts: list[Post], prev_total: float | None, stats: ContentStats
-    ) -> MonthAnalysis:
+        quarters_sorted = sorted(by_quarter)  # ascending, for prev-quarter deltas
+        quarter_totals = {q: sum(p.impressions for p in ps) for q, ps in by_quarter.items()}
+
+        quarter_analyses: list[PeriodAnalysis] = []
+        for i, q in enumerate(quarters_sorted):
+            prev_total = quarter_totals[quarters_sorted[i - 1]] if i > 0 else None
+            quarter_analyses.append(self._analyze_period(q, by_quarter[q], prev_total, stats, is_quarter=True))
+        quarter_analyses.reverse()  # newest first for display
+
+        return BirdsEyeResponse(months=month_analyses, quarters=quarter_analyses)
+
+    # --- per period ---
+    def _analyze_period(
+        self, period: str, posts: list[Post], prev_total: float | None, stats: ContentStats, is_quarter: bool
+    ) -> PeriodAnalysis:
         impressions = [p.impressions for p in posts]
         total = float(sum(impressions))
         avg = total / len(posts)
@@ -83,17 +99,23 @@ class BirdsEyeService:
         low_analyzed = [self._mistakes(p, median, stats) for p in low]
 
         change_pct = (total - prev_total) / prev_total * 100 if prev_total else None
-        narrative = self._narrative(posts, ranked, total, prev_total, change_pct)
+        narrative = self._narrative(posts, ranked, total, prev_total, change_pct, is_quarter)
 
-        y, mo = month.split("-")
-        return MonthAnalysis(
-            month=month,
-            label=f"{_MONTHS[int(mo) - 1]} {y}",
+        if is_quarter:
+            y, q = period.split("-")
+            label = f"{q} {y}"
+        else:
+            y, mo = period.split("-")
+            label = f"{_MONTHS[int(mo) - 1]} {y}"
+
+        return PeriodAnalysis(
+            period=period,
+            label=label,
             posts=len(posts),
             total_impressions=total,
             avg_impressions=avg,
             median_impressions=median,
-            prev_month_impressions=prev_total,
+            prev_period_impressions=prev_total,
             impressions_change_pct=change_pct,
             trend_narrative=narrative,
             top_posts=top_analyzed,
@@ -191,15 +213,16 @@ class BirdsEyeService:
         return stats[:8]
 
     @staticmethod
-    def _narrative(posts, ranked, total, prev_total, change_pct) -> str:
+    def _narrative(posts, ranked, total, prev_total, change_pct, is_quarter: bool = False) -> str:
         n = len(posts)
         top = ranked[0] if ranked else None
         top_share = (top.impressions / total) if (top and total) else 0.0
+        period_name = "quarter" if is_quarter else "month"
 
         if prev_total is None:
-            base = f"First month in view: {n} post(s) drew {total:,.0f} impressions."
+            base = f"First {period_name} in view: {n} post(s) drew {total:,.0f} impressions."
         elif change_pct is None or abs(change_pct) < 5:
-            base = f"Impressions held roughly flat ({total:,.0f}) versus the prior month."
+            base = f"Impressions held roughly flat ({total:,.0f}) versus the prior {period_name}."
         elif change_pct > 0:
             base = f"Impressions rose {change_pct:.0f}% to {total:,.0f}."
         else:
@@ -208,7 +231,7 @@ class BirdsEyeService:
         if top and top_share >= 0.4:
             driver = (
                 f' Largely driven by one standout post ("{T.hook(top.title, max_chars=60)}") '
-                f"at {top.impressions:,} impressions, {top_share:.0%} of the month."
+                f"at {top.impressions:,} impressions, {top_share:.0%} of the {period_name}."
             )
         elif prev_total is not None and change_pct is not None and change_pct < -5:
             driver = " Reach was spread thin: no breakout post and softer per-post performance."
